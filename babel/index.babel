@@ -1,0 +1,182 @@
+
+//This is a tic tac toe game, from the ReactJS tutorial on the ReactJS github. I extended a little beyond the tutorial to show which player did what move and to highlight what move we are viewing on the board, as well as allowing new moves when backtracking to older board states.
+
+//SQUARE FUNCTIONAL COMPONENT
+
+function Square (props){
+  return (
+      <button className="square" onClick={() => props.onClick()}>
+        {props.value}
+      </button>
+    );
+}
+
+// BOARD CLASS
+class Board extends React.Component {
+  renderSquare(i) {
+    return <Square value={this.props.squares[i]} onClick={() => this.props.onClick(i)} />;
+  }
+  /*
+  renderRow(row){
+    const offset = row*3
+    return(
+    <div className="board-row">
+      { 
+        for (var col = 0; col<3; col++){
+          this.renderSquare(offset + i);
+        }
+      }
+     </div>
+    );
+  }
+  
+  render() {
+    return(
+      <div>
+        {
+          for(var row = 0; row<3; row++){
+            renderRow(row);
+          } 
+        }
+      </div>
+    );
+    */
+    render(){
+    return (
+      <div>
+        <div className="board-row">
+          {this.renderSquare(0)}
+          {this.renderSquare(1)}
+          {this.renderSquare(2)}
+        </div>
+        <div className="board-row">
+          {this.renderSquare(3)}
+          {this.renderSquare(4)}
+          {this.renderSquare(5)}
+        </div>
+        <div className="board-row">
+          {this.renderSquare(6)}
+          {this.renderSquare(7)}
+          {this.renderSquare(8)}
+        </div>
+      </div>
+    );
+  }
+}
+
+// GAME CLASS
+class Game extends React.Component {
+  
+  constructor(){
+    super();
+    this.state={
+      history: [{
+        squares: Array(9).fill(null)
+      }],
+      xIsNext: true,
+      stepNumber: 0,
+      viewingStep: null, // add an update in jumpTo that modifies this state so we can bold it in our list of move components
+    };
+  }
+  
+  handleClick(i){
+    //initialize state variables
+    const history = this.state.history.slice(0,this.state.stepNumber + 1);
+    const current = history[history.length - 1];
+    //shallow copy of squares array for immutability
+    const copySquares = current.squares.slice();
+    //update viewingStep
+    
+    if (calculateWinner(copySquares) || copySquares[i]) return;
+    copySquares[i] = this.state.xIsNext ? "X" : "O";
+    this.setState({
+       history: history.concat([{
+          squares: copySquares
+       }]),
+       xIsNext: !this.state.xIsNext,
+       stepNumber: history.length,
+       viewingStep: history.length,
+      });
+  }
+  
+  jumpTo(moveNum){
+    this.setState({
+      stepNumber: moveNum,
+      xIsNext: (moveNum % 2 === 0),
+      viewingStep: moveNum,
+    })
+  }
+    
+  render() {
+    //initialize state variables 
+    const history = this.state.history;
+    const current = history[this.state.stepNumber];
+    const winner = calculateWinner(current.squares);
+    
+    //update display depending on who won or has the next turn
+    let status;
+    if(winner){
+      status = "Winner: " + winner;
+    } else {
+      status = 'Next player: ' + (this.state.xIsNext ? "X" : "O");
+    }
+    
+    const moves = history.map((step, move) =>{
+      // move out desc to a function component to make the code cleaner
+      const desc = move ?
+            "Move # " + move + " by " + ((move % 2 === 1) ? "X" : "O") :
+            "Game Start";
+      //bold the currently selected 
+      const displayDesc = (move === this.state.viewingStep) ? <b>{desc}</b> : <small>{desc}</small>;
+      return ( 
+        <li key={move}>
+        <button onClick={() => this.jumpTo(move)}>{displayDesc}</button>
+        </li>
+      );
+    });
+    
+    return (
+      <div className="game">
+        <div className="game-board">
+          <Board squares = {current.squares}
+                 onClick= {(i) => this.handleClick(i)}
+            />
+        </div>
+        <div className="game-info">
+          <div>{status}</div>
+          <ol start="0">
+            <div>list of Moves</div>
+            {moves}
+          </ol>
+        </div>
+      </div>
+    );
+  }
+}
+
+// ========================================
+
+ReactDOM.render(
+  <Game />,
+  document.getElementById('container')
+);
+
+function calculateWinner(squares) {
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      return squares[a];
+    }
+  }
+  return null;
+}
